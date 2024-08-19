@@ -28,16 +28,17 @@ jobs:
         fi
 
     - name: Clone 'eng' from the repository
-      run: git clone https://github.com/oh-ru/oh-ru.git eng
+      run: |
+        git clone https://github.com/oh-ru/oh-ru.git eng
+        ls -la eng
 
+    - name: Create /rus directory
+      run: mkdir -p /rus
+ 
     - name: Prepare and translate introduction.md
       run: |
-        # Добавляем строки в начало и конец файла
         echo -e "\n$(cat eng/introduction.md)\n" > /tmp/formatted_introduction.md
-        # Форматируем файл
         tr '\n' '\\n' < /tmp/formatted_introduction.md > /tmp/formatted_line.txt
-
-        # Создаем запрос к API Groq для перевода текста
         echo "import os" > translate.py
         echo "from groq import Groq" >> translate.py
         echo "client = Groq(api_key=os.environ.get('GROQCLOUDKEY'))" >> translate.py
