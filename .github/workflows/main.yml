@@ -32,9 +32,9 @@ jobs:
         git clone https://github.com/oh-ru/oh-ru.git eng
         ls -la eng
 
-    - name: Create /rus directory
-      run: mkdir -p /rus
- 
+    - name: Create rus directory
+      run: mkdir -p rus
+
     - name: Prepare and translate introduction.md
       run: |
         echo -e "\n$(cat eng/introduction.md)\n" > /tmp/formatted_introduction.md
@@ -46,8 +46,8 @@ jobs:
         echo "    content = file.read()" >> translate.py
         echo "chat_completion = client.chat.completions.create(messages=[{\"role\": \"user\", \"content\": content}], model='llama3-8b-8192')" >> translate.py
         echo "print(chat_completion.choices[0].message.content)" >> translate.py
-        python3 translate.py > /rus/introduction.json
-
+        python3 translate.py > rus/introduction.json
+    
     - name: Extract translated content and save as markdown
       run: |
         # Извлекаем контент из JSON и возвращаем \n на новые строки
