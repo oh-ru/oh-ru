@@ -1,0 +1,61 @@
+name: Translation Workflow
+
+on:
+  workflow_dispatch: # Запуск вручную
+
+jobs:
+  translate_introduction:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Install Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install groq
+
+    - name: Remove existing 'eng' folder if exists
+      run: |
+        if [ -d "eng" ]; then
+          rm -rf eng
+        fi
+
+    - name: Clone 'eng' from the repository
+      run: git clone https://github.com/oh-ru/oh-ru.git eng
+
+    - name: Prepare and translate introduction.md
+      run: |
+        # Добавляем строки в начало и конец файла
+        echo -e "\n$(cat eng/introduction.md)\n" > /tmp/formatted_introduction.md
+        # Форматируем файл
+        tr '\n' '\\n' < /tmp/formatted_introduction.md > /tmp/formatted_line.txt
+
+        # Создаем запрос к API Groq для перевода текста
+        echo "import os" > translate.py
+        echo "from groq import Groq" >> translate.py
+        echo "client = Groq(api_key=os.environ.get('GROQCLOUDKEY'))" >> translate.py
+        echo "with open('/tmp/formatted_line.txt', 'r') as file:" >> translate.py
+        echo "    content = file.read()" >> translate.py
+        echo "chat_completion = client.chat.completions.create(messages=[{\"role\": \"user\", \"content\": content}], model='llama3-8b-8192')" >> translate.py
+        echo "print(chat_completion.choices[0].message.content)" >> translate.py
+        python3 translate.py > /rus/introduction.json
+
+    - name: Extract translated content and save as markdown
+      run: |
+        # Извлекаем контент из JSON и возвращаем \n на новые строки
+        cat /rus/introduction.json | jq -r '.choices[0].message.content' | sed 's/\\n/\n/g' > /rus/introduction.md
+
+    - name: Commit and push changes
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add rus/introduction.md rus/introduction.json
+        git commit -m "Add translated introduction.md"
+        git push origin main
